@@ -1,9 +1,12 @@
 ﻿using MongoDB.Driver;
 using Play.Catalog.Service.Entities;
 
+// add mongo db on docker commad:
+//      on ps or command prompt:  docker run -d --rm --name Mongo -p 27017:27017 -v mongodbdata:/data/db mongo
+
 namespace Play.Catalog.Service.Repository
 {
-    public class ItemsRepository
+    public class ItemsRepository : IItemsRepository
     {
         private const string collectionName = "items";
 
@@ -11,12 +14,18 @@ namespace Play.Catalog.Service.Repository
 
         private readonly FilterDefinitionBuilder<Item> filterBuilder = Builders<Item>.Filter;
 
-        public ItemsRepository()
+        public ItemsRepository(IMongoDatabase database)
         {
-            var mongoClient = new MongoClient("mongodb://localhost:27017");
-            var database = mongoClient.GetDatabase("Catalog");
             dbCollection = database.GetCollection<Item>(collectionName);
         }
+         
+        //public ItemsRepository()
+        //{
+        //    var mongoClient = new MongoClient("mongodb://localhost:27017");
+        //    var database = mongoClient.GetDatabase("Catalog");
+        //    dbCollection = database.GetCollection<Item>(collectionName);
+        //}
+
 
         public async Task<IReadOnlyCollection<Item>> GetAllAsync()
         {
@@ -50,11 +59,11 @@ namespace Play.Catalog.Service.Repository
             await dbCollection.ReplaceOneAsync(filter, item);
         }
 
-        public async  Task RemoveAsync(Item item)
+        public async Task RemoveAsync(Item item)
         {
             FilterDefinition<Item> filter = filterBuilder.Eq(existingEntity => existingEntity.id, item.id);
 
-            await dbCollection.ReplaceOneAsync(filter, item);
+            await dbCollection.DeleteOneAsync(filter);
         }
 
 
